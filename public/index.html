@@ -108,7 +108,7 @@
     <p class="subtitle">The simplest automated waitlist manager for Discord.</p>
 
     <!-- STATUS -->
-    <div id="statusBox" class="checking">⏳ Checking...</div>
+    <div id="statusBox" class="online">🟢 Bot Available</div>
 
     <!-- INVITE BUTTON ONLY -->
     <div class="buttons">
@@ -134,32 +134,6 @@
 
   </div>
 
-  <!-- STATUS CHECKER -->
-  <script>
-    async function checkStatus() {
-      try {
-        const res = await fetch("/status", { cache: "no-store" });
-        const data = await res.json();
-
-        const box = document.getElementById("statusBox");
-
-        if (data.online) {
-          box.className = "online";
-          box.textContent = "🟢 ONLINE";
-        } else {
-          box.className = "offline";
-          box.textContent = "🔴 OFFLINE";
-        }
-      } catch (err) {
-        const box = document.getElementById("statusBox");
-        box.className = "offline";
-        box.textContent = "🔴 ERROR";
-      }
-    }
-
-    checkStatus();
-    setInterval(checkStatus, 5000);
-  </script>
 
 </body>
 </html>
