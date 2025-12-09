@@ -1,97 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Waitlist Bot</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>Waitlist Bot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="container">
+<!-- Top Navigation -->
+<header class="navbar">
+    <div class="logo">Waitlist Bot</div>
+    <nav>
+        <a href="https://discord.com/oauth2/authorize?client_id=1446687675330330826&permissions=139586825281&integration_type=0&scope=applications.commands+bot">Invite</a>
+        <a href="https://discord.gg/YOURSERVER">Support Server</a>
+        <a href="#commands">Commands</a>
+    </nav>
+</header>
 
-  <h1>🤖 Waitlist Bot</h1>
-  <p class="subtitle">Fast • Simple • Reliable Waitlists for Discord</p>
+<!-- HERO -->
+<section class="hero">
+    <h1>🤖 Waitlist Bot</h1>
+    <p class="subtitle">The smartest automated waitlist manager for Discord communities.</p>
 
-  <!-- STATUS -->
-  <div id="statusBox" class="checking">🟡 Checking Status...</div>
-  <p id="uptime"></p>
-  <p id="servers"></p>
-  <p id="waitlists"></p>
+    <div id="statusBox" class="status checking">Checking bot status...</div>
 
-  <!-- BUTTONS -->
-  <div class="buttons">
-    <a href="https://discord.com/oauth2/authorize?client_id=1446687675330330826&permissions=139586825281&integration_type=0&scope=applications.commands+bot"
-       class="btn invite">➕ Invite Bot</a>
+    <div class="buttons">
+        <a href="https://discord.com/oauth2/authorize?client_id=1446687675330330826&permissions=139586825281&integration_type=0&scope=applications.commands+bot" class="btn invite">
+            ➕ Invite to Discord
+        </a>
+        <a href="https://discord.gg/YOURSERVER" class="btn support">
+            💬 Join Support Server
+        </a>
+    </div>
+</section>
 
-    <button id="themeBtn" class="btn theme">🌗 Theme</button>
-  </div>
-
-  <!-- COMMAND SECTION -->
-  <div class="section">
+<!-- COMMANDS -->
+<section class="section" id="commands">
     <h2>📜 Commands</h2>
 
-    <div class="cmd"><b>/setup</b> — Configure roles + channels.</div>
+    <div class="cmd"><b>/setup</b> — Configure roles, channels, and log channel.</div>
     <div class="cmd"><b>/createwaitlist</b> — Create a new waitlist.</div>
-    <div class="cmd"><b>/deletewaitlist</b> — Delete a waitlist.</div>
-    <div class="cmd"><b>/renamewaitlist</b> — Rename a waitlist.</div>
-    <div class="cmd"><b>/listwaitlists</b> — Show all waitlists.</div>
-    <div class="cmd"><b>/setwaitlist</b> — Post a waitlist in a channel.</div>
-    <div class="cmd"><b>/add</b> — Add a user.</div>
-    <div class="cmd"><b>/remove</b> — Remove a user.</div>
+    <div class="cmd"><b>/deletewaitlist</b> — Delete an existing waitlist.</div>
+    <div class="cmd"><b>/renamewaitlist</b> — Safely rename a waitlist.</div>
+    <div class="cmd"><b>/listwaitlists</b> — Show all waitlists in the server.</div>
+    <div class="cmd"><b>/setwaitlist</b> — Post a waitlist with buttons.</div>
+    <div class="cmd"><b>/add</b> — Add someone to a waitlist.</div>
+    <div class="cmd"><b>/remove</b> — Remove someone from a waitlist.</div>
     <div class="cmd"><b>/purgeallwaitlists</b> — Delete ALL waitlists.</div>
-    <div class="cmd"><b>/cmds</b> — Show all commands.</div>
+    <div class="cmd"><b>/cmds</b> — List all commands.</div>
     <div class="cmd"><b>/ping</b> — Bot version + latency.</div>
-  </div>
+</section>
 
-</div>
+<!-- FOOTER -->
+<footer class="footer">
+    <p>© 2025 Waitlist Bot — All Rights Reserved</p>
+    <div class="footer-links">
+        <a href="/tos.html">Terms of Service</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="https://discord.gg/YOURSERVER">Support Server</a>
+    </div>
+</footer>
 
+<!-- Status Checker -->
 <script>
-async function getStatus() {
-  try {
-    const res = await fetch("/status");
-    const data = await res.json();
+    async function checkStatus() {
+        try {
+            const res = await fetch("/status");
+            const json = await res.json();
 
-    const box = document.getElementById("statusBox");
+            const box = document.getElementById("statusBox");
 
-    // Status colors
-    if (data.online) {
-      box.className = "online";
-      box.innerText = "🟢 Online";
-    } else {
-      box.className = "offline";
-      box.innerText = "🔴 Offline";
+            if (json.online) {
+                box.className = "status online";
+                box.textContent = "🟢 Bot Online";
+            } else {
+                box.className = "status offline";
+                box.textContent = "🔴 Bot Offline";
+            }
+        } catch {
+            box.className = "status offline";
+            box.textContent = "🔴 Unable to check status";
+        }
     }
 
-    // Uptime
-    let sec = Math.floor(data.uptime / 1000);
-    let h = Math.floor(sec / 3600);
-    sec %= 3600;
-    let m = Math.floor(sec / 60);
-    sec %= 60;
-
-    document.getElementById("uptime").innerText =
-      `Uptime: ${h}h ${m}m ${sec}s`;
-
-    // Server count
-    document.getElementById("servers").innerText =
-      `Servers: ${data.guilds}`;
-
-    // Waitlist count
-    document.getElementById("waitlists").innerText =
-      `Total Waitlists: ${data.waitlists}`;
-  } catch (err) {
-    console.log("Status fetch error");
-  }
-}
-
-// Update every 2 sec
-setInterval(getStatus, 2000);
-getStatus();
-
-// Theme switch
-document.getElementById("themeBtn").onclick = () => {
-  document.body.classList.toggle("light");
-};
+    checkStatus();
+    setInterval(checkStatus, 5000);
 </script>
 
 </body>
