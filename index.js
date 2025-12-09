@@ -1,5 +1,5 @@
 // ======================================
-// Waitlist Bot + Website (Anti-Crash)
+// Waitlist Bot + Website (Koyeb Compatible)
 // ======================================
 
 require("dotenv").config();
@@ -12,13 +12,15 @@ const fs = require("fs");
 // Website Static Files
 // =========================
 
+// Serve everything in /public
 app.use(express.static(path.join(__dirname, "public")));
 
+// ROOT PAGE
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Live bot status for website
+// Bot status API
 let BOT_READY = false;
 
 app.get("/status", (req, res) => {
@@ -51,227 +53,130 @@ client.commands = new Collection();
 // =========================
 // Load Commands
 // =========================
-
 const commandsPath = path.join(__dirname, "commands");
-
 if (fs.existsSync(commandsPath)) {
   const commandFiles = fs.readdirSync(commandsPath);
-
   for (const file of commandFiles) {
-    try {
-      const command = require(path.join(commandsPath, file));
-      client.commands.set(command.data.name, command);
-      console.log("Loaded command:", command.data.name);
-    } catch (err) {
-      console.error("❌ Failed to load command:", file, err);
-    }
+    const cmd = require(path.join(commandsPath, file));
+    client.commands.set(cmd.data.name, cmd);
+    console.log("Loaded:", cmd.data.name);
   }
-} else {
-  console.warn("⚠️ No commands folder found!");
 }
 
 // =========================
-// Interaction Handler
+// MAIN Interaction Handler
 // =========================
-
-client.on("interactionCreate", async interaction => {
+client.on("interactionCreate", async (interaction) => {
   try {
-    // ============================================
     // AUTOCOMPLETE
-    // ============================================
     if (interaction.isAutocomplete()) {
       const guildId = interaction.guild.id;
-      const dirPath = path.join(__dirname, "waitlists", guildId);
+      const listDir = path.join(__dirname, "waitlists", guildId);
 
-      if (!fs.existsSync(dirPath)) return interaction.respond([]);
+      if (!fs.existsSync(listDir)) return interaction.respond([]);
 
-      const files = fs.readdirSync(dirPath).filter(f => f.endsWith(".json"));
+      const files = fs.readdirSync(listDir).filter(f => f.endsWith(".json"));
       const names = files.map(f => f.replace(".json", ""));
 
       const focused = interaction.options.getFocused()?.toLowerCase() || "";
-      const filtered = names.filter(n =>
-        n.toLowerCase().includes(focused)
-      );
+      const filtered = names.filter(n => n.toLowerCase().includes(focused));
 
-      return interaction.respond(
-        filtered.map(n => ({ name: n, value: n }))
-      );
+      return interaction.respond(filtered.map(n => ({ name: n, value: n })));
     }
 
-    // ============================================
     // SLASH COMMANDS
-    // ============================================
     if (interaction.isChatInputCommand()) {
-      const command = client.commands.get(interaction.commandName);
+      const cmd = client.commands.get(interaction.commandName);
+      if (!cmd) return;
 
-      if (!command) {
-        return interaction.reply({
-          content: "❌ Unknown command.",
-          flags: 64
-        });
-      }
-
-      try {
-        await command.execute(interaction);
-      } catch (err) {
-        console.error(err);
-        return interaction.reply({
-          content: "❌ Error running command.",
-          flags: 64
-        });
-      }
+      await cmd.execute(interaction);
       return;
     }
 
-    // ============================================
-    // BUTTON HANDLER
-    // ============================================
+    // BUTTONS
     if (interaction.isButton()) {
-      const parts = interaction.customId.split("_");
-
-      if (parts.length < 2) {
-        return interaction.reply({
-          content: "❌ Invalid button.",
-          flags: 64
-        });
-      }
-
-      const [action, waitlistName] = parts;
+      const [action, name] = interaction.customId.split("_");
       const guildId = interaction.guild.id;
 
-      const file = path.join(
-        __dirname,
-        "waitlists",
-        guildId,
-        `${waitlistName}.json`
-      );
-
-      const configFile = path.join(
-        __dirname,
-        "configs",
-        `${guildId}.json`
-      );
+      const file = path.join(__dirname, "waitlists", guildId, `${name}.json`);
+      const configFile = path.join(__dirname, "configs", `${guildId}.json`);
 
       if (!fs.existsSync(configFile)) {
-        return interaction.reply({
-          content: "❌ Server is not fully configured. Run /setup",
-          flags: 64
-        });
+        return interaction.reply({ content: "❌ Server not set up.", flags: 64 });
       }
 
       const config = JSON.parse(fs.readFileSync(configFile));
 
-      // ============================================
-      // UPDATE BUTTON
-      // ============================================
       if (action === "update") {
         if (!fs.existsSync(file)) {
-          return interaction.reply({
-            content: "❌ This waitlist no longer exists.",
-            flags: 64
-          });
+          return interaction.reply({ content: "❌ Waitlist missing.", flags: 64 });
         }
 
         const data = JSON.parse(fs.readFileSync(file));
 
         const embed = new EmbedBuilder()
-          .setTitle(`📋 Waitlist: ${waitlistName}`)
+          .setTitle(`📋 Waitlist: ${name}`)
           .setColor("Blue")
           .setDescription(
             data.users.length
-              ? data.users.map((id, i) => `${i + 1}. <@${id}>`).join("\n")
+              ? data.users.map((id, i) => `${i+1}. <@${id}>`).join("\n")
               : "_No users yet._"
           );
 
         const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId(`update_${waitlistName}`)
-            .setLabel("Update")
-            .setStyle(ButtonStyle.Primary),
-
-          new ButtonBuilder()
-            .setCustomId(`delete_${waitlistName}`)
-            .setLabel("Delete")
-            .setStyle(ButtonStyle.Danger)
+          new ButtonBuilder().setCustomId(`update_${name}`).setLabel("Update").setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`delete_${name}`).setLabel("Delete").setStyle(ButtonStyle.Danger)
         );
 
-        return interaction.update({
-          embeds: [embed],
-          components: [row]
-        });
+        return interaction.update({ embeds: [embed], components: [row] });
       }
 
-      // ============================================
-      // DELETE BUTTON
-      // ============================================
       if (action === "delete") {
-        const memberRoles = interaction.member.roles.cache.map(r => r.id);
-        const isManager = memberRoles.some(id =>
-          config.managerRoleIds.includes(id)
-        );
-
-        const isAdmin = interaction.member.permissions.has(
-          PermissionsBitField.Flags.Administrator
-        );
+        const roles = interaction.member.roles.cache.map(r => r.id);
+        const isManager = roles.some(r => config.managerRoleIds.includes(r));
+        const isAdmin = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
 
         if (!isAdmin && !isManager) {
-          return interaction.reply({
-            content: "❌ You do not have permission.",
-            flags: 64
-          });
+          return interaction.reply({ content: "❌ You cannot delete this.", flags: 64 });
         }
 
         if (fs.existsSync(file)) fs.unlinkSync(file);
 
-        // Log deletion
         if (config.logChannelId) {
-          const logChannel = interaction.guild.channels.cache.get(config.logChannelId);
-          if (logChannel) {
-            logChannel.send(
-              `🗑️ **Waitlist Deleted:** \`${waitlistName}\`\n👤 <@${interaction.user.id}>\n🕒 <t:${Math.floor(Date.now() / 1000)}:F>`
-            ).catch(() => {});
+          const log = interaction.guild.channels.cache.get(config.logChannelId);
+          if (log) {
+            log.send(
+              `🗑️ Deleted **${name}**\n👤 <@${interaction.user.id}>\n🕒 <t:${Math.floor(Date.now()/1000)}:F>`
+            );
           }
         }
 
         return interaction.update({
-          content: `🗑️ Deleted **${waitlistName}**.`,
-          embeds: [],
-          components: []
+          content: `🗑️ Deleted **${name}**.`,
+          components: [],
+          embeds: []
         });
       }
     }
 
   } catch (err) {
-    console.error("❌ Interaction Crash Prevented:", err);
-
-    if (interaction.deferred || interaction.replied) {
-      return interaction.editReply({ content: "⚠️ Something went wrong." });
-    } else {
-      return interaction.reply({
-        content: "⚠️ Something went wrong.",
-        flags: 64
-      });
-    }
+    console.error("Interaction error:", err);
   }
 });
 
 // =========================
-// Login
+// Bot Ready
 // =========================
-
 client.on("clientReady", () => {
   BOT_READY = true;
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
+// Login bot
 client.login(process.env.TOKEN);
 
 // =========================
-// Website Start
+// START EXPRESS SERVER (Koyeb requires this!)
 // =========================
-
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`🌐 Website running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log("🌐 Web server live on port", PORT));
