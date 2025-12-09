@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Live bot status for the website
+// Live bot status for website
 let BOT_READY = false;
 
 app.get("/status", (req, res) => {
@@ -48,8 +48,12 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Load commands
+// =========================
+// Load Commands
+// =========================
+
 const commandsPath = path.join(__dirname, "commands");
+
 if (fs.existsSync(commandsPath)) {
   const commandFiles = fs.readdirSync(commandsPath);
 
@@ -59,7 +63,7 @@ if (fs.existsSync(commandsPath)) {
       client.commands.set(command.data.name, command);
       console.log("Loaded command:", command.data.name);
     } catch (err) {
-      console.error("Failed to load command:", file, err);
+      console.error("❌ Failed to load command:", file, err);
     }
   }
 } else {
@@ -67,13 +71,14 @@ if (fs.existsSync(commandsPath)) {
 }
 
 // =========================
-// SINGLE interaction handler
-// (prevents double firing)
+// Interaction Handler
 // =========================
 
-client.on("interactionCreate", async (interaction) => {
+client.on("interactionCreate", async interaction => {
   try {
-    // =============== AUTOCOMPLETE ===============
+    // ============================================
+    // AUTOCOMPLETE
+    // ============================================
     if (interaction.isAutocomplete()) {
       const guildId = interaction.guild.id;
       const dirPath = path.join(__dirname, "waitlists", guildId);
@@ -84,16 +89,27 @@ client.on("interactionCreate", async (interaction) => {
       const names = files.map(f => f.replace(".json", ""));
 
       const focused = interaction.options.getFocused()?.toLowerCase() || "";
-      const filtered = names.filter(n => n.toLowerCase().includes(focused));
+      const filtered = names.filter(n =>
+        n.toLowerCase().includes(focused)
+      );
 
-      return interaction.respond(filtered.map(n => ({ name: n, value: n })));
+      return interaction.respond(
+        filtered.map(n => ({ name: n, value: n }))
+      );
     }
 
-    // =============== SLASH COMMANDS ===============
+    // ============================================
+    // SLASH COMMANDS
+    // ============================================
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
-      if (!command)
-        return interaction.reply({ content: "❌ Unknown command.", flags: 64 });
+
+      if (!command) {
+        return interaction.reply({
+          content: "❌ Unknown command.",
+          flags: 64
+        });
+      }
 
       try {
         await command.execute(interaction);
@@ -107,11 +123,13 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
 
-    // =============== BUTTON HANDLER ===============
+    // ============================================
+    // BUTTON HANDLER
+    // ============================================
     if (interaction.isButton()) {
-      // Protect from invalid customIds
       const parts = interaction.customId.split("_");
-      if (parts.length < 2 || !parts[1]) {
+
+      if (parts.length < 2) {
         return interaction.reply({
           content: "❌ Invalid button.",
           flags: 64
@@ -121,7 +139,6 @@ client.on("interactionCreate", async (interaction) => {
       const [action, waitlistName] = parts;
       const guildId = interaction.guild.id;
 
-      // Paths
       const file = path.join(
         __dirname,
         "waitlists",
@@ -137,16 +154,16 @@ client.on("interactionCreate", async (interaction) => {
 
       if (!fs.existsSync(configFile)) {
         return interaction.reply({
-          content: "❌ Server is not fully set up.",
+          content: "❌ Server is not fully configured. Run /setup",
           flags: 64
         });
       }
 
       const config = JSON.parse(fs.readFileSync(configFile));
 
-      // =======================
+      // ============================================
       // UPDATE BUTTON
-      ========================
+      // ============================================
       if (action === "update") {
         if (!fs.existsSync(file)) {
           return interaction.reply({
@@ -184,12 +201,15 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
-      // =======================
+      // ============================================
       // DELETE BUTTON
-      ========================
+      // ============================================
       if (action === "delete") {
-        const roles = interaction.member.roles.cache.map(r => r.id);
-        const isManager = roles.some(id => config.managerRoleIds.includes(id));
+        const memberRoles = interaction.member.roles.cache.map(r => r.id);
+        const isManager = memberRoles.some(id =>
+          config.managerRoleIds.includes(id)
+        );
+
         const isAdmin = interaction.member.permissions.has(
           PermissionsBitField.Flags.Administrator
         );
@@ -203,11 +223,11 @@ client.on("interactionCreate", async (interaction) => {
 
         if (fs.existsSync(file)) fs.unlinkSync(file);
 
-        // Logging
+        // Log deletion
         if (config.logChannelId) {
-          const channel = interaction.guild.channels.cache.get(config.logChannelId);
-          if (channel) {
-            channel.send(
+          const logChannel = interaction.guild.channels.cache.get(config.logChannelId);
+          if (logChannel) {
+            logChannel.send(
               `🗑️ **Waitlist Deleted:** \`${waitlistName}\`\n👤 <@${interaction.user.id}>\n🕒 <t:${Math.floor(Date.now() / 1000)}:F>`
             ).catch(() => {});
           }
@@ -220,13 +240,12 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
     }
+
   } catch (err) {
     console.error("❌ Interaction Crash Prevented:", err);
 
     if (interaction.deferred || interaction.replied) {
-      return interaction.editReply({
-        content: "⚠️ Something went wrong.",
-      });
+      return interaction.editReply({ content: "⚠️ Something went wrong." });
     } else {
       return interaction.reply({
         content: "⚠️ Something went wrong.",
@@ -237,19 +256,20 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 // =========================
-// Login Event
+// Login
 // =========================
+
 client.on("clientReady", () => {
   BOT_READY = true;
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
-// Start bot
 client.login(process.env.TOKEN);
 
 // =========================
-// Web Server (no duplicates)
+// Website Start
 // =========================
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
