@@ -33,20 +33,18 @@ app.get("/uptime", (req, res) => {
   res.json({ uptime: Date.now() - START_TIME });
 });
 
-// count guilds, waitlists, ping
 app.get("/stats", (req, res) => {
   const guilds = client.guilds.cache.size;
 
-  // Count waitlists (all guilds)
+  // Count waitlists
   let totalWaitlists = 0;
   const base = path.join(__dirname, "waitlists");
 
   if (fs.existsSync(base)) {
     for (const gid of fs.readdirSync(base)) {
-      const guildDir = path.join(base, gid);
-      if (fs.lstatSync(guildDir).isDirectory()) {
-        const files = fs.readdirSync(guildDir).filter(f => f.endsWith(".json"));
-        totalWaitlists += files.length;
+      const dir = path.join(base, gid);
+      if (fs.lstatSync(dir).isDirectory()) {
+        totalWaitlists += fs.readdirSync(dir).filter(f => f.endsWith(".json")).length;
       }
     }
   }
@@ -88,8 +86,7 @@ client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, "commands");
 if (fs.existsSync(commandsPath)) {
-  const files = fs.readdirSync(commandsPath);
-  for (const file of files) {
+  for (const file of fs.readdirSync(commandsPath)) {
     const cmd = require(path.join(commandsPath, file));
     client.commands.set(cmd.data.name, cmd);
     console.log("Loaded:", cmd.data.name);
@@ -102,35 +99,35 @@ if (fs.existsSync(commandsPath)) {
 
 client.on("interactionCreate", async (interaction) => {
   try {
-    // =============== AUTOCOMPLETE ===============
+
+    // AUTOCOMPLETE
     if (interaction.isAutocomplete()) {
-      const guildId = interaction.guild.id;
-      const listDir = path.join(__dirname, "waitlists", guildId);
+      const dir = path.join(__dirname, "waitlists", interaction.guild.id);
 
-      if (!fs.existsSync(listDir)) return interaction.respond([]);
+      if (!fs.existsSync(dir)) return interaction.respond([]);
 
-      const files = fs.readdirSync(listDir).filter(f => f.endsWith(".json"));
-      const names = files.map(f => f.replace(".json", ""));
+      const names = fs.readdirSync(dir)
+        .filter(f => f.endsWith(".json"))
+        .map(f => f.replace(".json", ""));
 
-      const focused = interaction.options.getFocused()?.toLowerCase() || "";
-      const filtered = names.filter(n => n.toLowerCase().includes(focused));
+      const focus = interaction.options.getFocused()?.toLowerCase() || "";
+      const filtered = names.filter(n => n.toLowerCase().includes(focus));
 
       return interaction.respond(filtered.map(n => ({ name: n, value: n })));
     }
 
-    // =============== SLASH COMMANDS ===============
+    // SLASH COMMANDS
     if (interaction.isChatInputCommand()) {
       const cmd = client.commands.get(interaction.commandName);
       if (!cmd) return interaction.reply({ content: "❌ Unknown command.", flags: 64 });
-
       return cmd.execute(interaction);
     }
 
-    // =============== BUTTON HANDLER ===============
+    // BUTTON HANDLER
     if (interaction.isButton()) {
       const [action, name] = interaction.customId.split("_");
-      const guildId = interaction.guild.id;
 
+      const guildId = interaction.guild.id;
       const file = path.join(__dirname, "waitlists", guildId, `${name}.json`);
       const configFile = path.join(__dirname, "configs", `${guildId}.json`);
 
@@ -140,6 +137,7 @@ client.on("interactionCreate", async (interaction) => {
 
       const config = JSON.parse(fs.readFileSync(configFile));
 
+      // UPDATE BUTTON
       if (action === "update") {
         if (!fs.existsSync(file)) {
           return interaction.reply({ content: "❌ Waitlist missing.", flags: 64 });
@@ -164,6 +162,7 @@ client.on("interactionCreate", async (interaction) => {
         return interaction.update({ embeds: [embed], components: [row] });
       }
 
+      // DELETE BUTTON
       if (action === "delete") {
         const isManager = interaction.member.roles.cache
           .some(r => config.managerRoleIds.includes(r.id));
@@ -201,7 +200,6 @@ client.on("clientReady", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
-// Login
 client.login(process.env.TOKEN);
 
 // =========================
