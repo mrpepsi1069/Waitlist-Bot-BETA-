@@ -1,135 +1,106 @@
-/* Global */
 body {
     margin: 0;
-    background: linear-gradient(135deg, #0d0d0d, #1b1b1b);
-    background-size: 300% 300%;
-    animation: gradientMove 12s ease infinite;
-    font-family: "Segoe UI", Arial, sans-serif;
+    padding: 0;
+    font-family: "Arial", sans-serif;
+    background: linear-gradient(140deg, #0a0a0a, #111, #181818);
+    background-size: 400% 400%;
+    animation: bgMove 12s infinite linear;
     color: white;
+    text-align: center;
 }
 
-@keyframes gradientMove {
+@keyframes bgMove {
     0% { background-position: 0% 0%; }
     50% { background-position: 100% 100%; }
     100% { background-position: 0% 0%; }
 }
 
-/* NAVBAR */
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    padding: 15px 40px;
-    background: rgba(255,255,255,0.06);
-    backdrop-filter: blur(10px);
-    position: sticky;
-    top: 0;
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 50px 20px;
 }
 
-.navbar .logo {
-    font-size: 24px;
-    font-weight: 700;
-}
-
-.navbar nav a {
-    margin-left: 20px;
-    color: #00e6ff;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.navbar nav a:hover {
-    opacity: 0.7;
-}
-
-/* HERO */
-.hero {
-    text-align: center;
-    padding: 100px 20px;
-}
-
-.hero h1 {
+h1 {
     font-size: 48px;
+    margin-bottom: 10px;
 }
 
 .subtitle {
-    font-size: 20px;
     opacity: 0.8;
     margin-bottom: 30px;
 }
 
-/* Status Box */
+/* STATUS BOX */
 .status {
+    padding: 15px 25px;
     display: inline-block;
-    padding: 12px 24px;
+    font-size: 22px;
     border-radius: 12px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.online { background: #00e676; color: black; }
+.offline { background: #ff1744; }
+.checking { background: #ffd600; color: black; }
+
+/* STAT CARDS */
+.stats {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.statCard {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 20px 25px;
+    border-radius: 15px;
     font-size: 20px;
     font-weight: bold;
-}
-
-.online { background: #00ff80; color: black; }
-.offline { background: #ff3344; }
-.checking { background: #ffdd33; color: black; }
-
-/* Buttons */
-.buttons {
-    margin-top: 20px;
-}
-
-.btn {
-    padding: 14px 24px;
-    text-decoration: none;
-    font-size: 18px;
-    border-radius: 10px;
-    margin: 5px;
-    display: inline-block;
-    font-weight: bold;
+    min-width: 200px;
     transition: 0.25s;
 }
 
-.btn:hover {
+.statCard:hover {
     transform: scale(1.05);
 }
 
-.invite { background: #5865F2; color: white; }
-.support { background: #00c8ff; color: black; }
-
-/* Command Section */
-.section {
-    max-width: 900px;
-    margin: auto;
-    margin-top: 60px;
-    padding: 40px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 16px;
+/* BUTTONS */
+.buttons {
+    margin-top: 30px;
 }
 
-.section h2 {
-    font-size: 36px;
+.btn {
+    display: inline-block;
+    padding: 15px 30px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    margin: 10px;
+    transition: 0.25s;
 }
 
-.cmd {
-    margin: 8px 0;
-    font-size: 18px;
+.invite { background: #5865F2; }
+.support { background: #00bcd4; }
+
+.btn:hover {
+    transform: scale(1.07);
+    opacity: 0.9;
 }
 
-.cmd b {
-    color: #00c8ff;
-}
-
-/* Footer */
-.footer {
+/* FOOTER */
+footer {
     margin-top: 60px;
     padding: 20px;
-    text-align: center;
-    background: rgba(255,255,255,0.05);
+    opacity: 0.7;
 }
 
-.footer-links a {
-    margin: 0 10px;
+footer a {
     color: #00e6ff;
     text-decoration: none;
-}
-
-.footer-links a:hover {
-    opacity: 0.7;
 }
