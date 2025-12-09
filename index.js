@@ -1,34 +1,50 @@
 // ======================================
-// Waitlist Bot + Website (Koyeb Compatible)
+// Waitlist Bot + Website (Koyeb Ready)
 // ======================================
 
 require("dotenv").config();
 const express = require("express");
-const app = express();
 const path = require("path");
 const fs = require("fs");
+const app = express();
 
 // =========================
-// Website Static Files
+// WEBSITE STATIC FILES
 // =========================
 
-// Serve everything in /public
 app.use(express.static(path.join(__dirname, "public")));
 
-// Root page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Bot status API
+// Live bot status API
 let BOT_READY = false;
+let START_TIME = Date.now();
 
 app.get("/status", (req, res) => {
-  res.json({ online: BOT_READY });
+  let totalWaitlists = 0;
+  const basePath = path.join(__dirname, "waitlists");
+
+  if (fs.existsSync(basePath)) {
+    const guildFolders = fs.readdirSync(basePath);
+    for (const folder of guildFolders) {
+      const full = path.join(basePath, folder);
+      const files = fs.readdirSync(full).filter(f => f.endsWith(".json"));
+      totalWaitlists += files.length;
+    }
+  }
+
+  res.json({
+    online: BOT_READY,
+    uptime: Date.now() - START_TIME,
+    waitlists: totalWaitlists,
+    guilds: client.guilds.cache.size
+  });
 });
 
 // =========================
-// Discord Bot Setup
+// DISCORD BOT SETUP
 // =========================
 
 const {
@@ -43,23 +59,18 @@ const {
 } = require("discord.js");
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers
-  ]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
 });
 
 client.commands = new Collection();
 
 // =========================
-// Load Commands
+// LOAD COMMANDS
 // =========================
 
 const commandsPath = path.join(__dirname, "commands");
-
 if (fs.existsSync(commandsPath)) {
   const commandFiles = fs.readdirSync(commandsPath);
-
   for (const file of commandFiles) {
     const cmd = require(path.join(commandsPath, file));
     client.commands.set(cmd.data.name, cmd);
@@ -68,34 +79,29 @@ if (fs.existsSync(commandsPath)) {
 }
 
 // =========================
-// MAIN Interaction Handler
+// MAIN INTERACTION HANDLER
 // =========================
 
-client.on("interactionCreate", async (interaction) => {
+client.on("interactionCreate", async interaction => {
   try {
-    // -------------------------
     // AUTOCOMPLETE
-    // -------------------------
     if (interaction.isAutocomplete()) {
       const guildId = interaction.guild.id;
-      const listDir = path.join(__dirname, "waitlists", guildId);
+      const dir = path.join(__dirname, "waitlists", guildId);
 
-      if (!fs.existsSync(listDir)) return interaction.respond([]);
+      if (!fs.existsSync(dir)) return interaction.respond([]);
 
-      const files = fs.readdirSync(listDir).filter(f => f.endsWith(".json"));
+      const files = fs.readdirSync(dir).filter(f => f.endsWith(".json"));
       const names = files.map(f => f.replace(".json", ""));
+      const focused = interaction.options.getFocused().toLowerCase();
 
-      const focused = interaction.options.getFocused()?.toLowerCase() || "";
       const filtered = names.filter(n => n.toLowerCase().includes(focused));
-
       return interaction.respond(
         filtered.map(n => ({ name: n, value: n }))
       );
     }
 
-    // -------------------------
     // SLASH COMMANDS
-    // -------------------------
     if (interaction.isChatInputCommand()) {
       const cmd = client.commands.get(interaction.commandName);
       if (!cmd) return;
@@ -104,50 +110,30 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
 
-    // -------------------------
     // BUTTON HANDLER
-    // -------------------------
     if (interaction.isButton()) {
-      const [action, name] = interaction.customId.split("_");
+      const [action, waitlistName] = interaction.customId.split("_");
       const guildId = interaction.guild.id;
 
-      const file = path.join(
-        __dirname,
-        "waitlists",
-        guildId,
-        `${name}.json`
-      );
-
-      const configFile = path.join(
-        __dirname,
-        "configs",
-        `${guildId}.json`
-      );
+      const file = path.join(__dirname, "waitlists", guildId, `${waitlistName}.json`);
+      const configFile = path.join(__dirname, "configs", `${guildId}.json`);
 
       if (!fs.existsSync(configFile)) {
-        return interaction.reply({
-          content: "❌ Server not set up.",
-          flags: 64
-        });
+        return interaction.reply({ content: "❌ Server not set up.", flags: 64 });
       }
 
       const config = JSON.parse(fs.readFileSync(configFile));
 
-      // -------------------------
       // UPDATE BUTTON
-      -------------------------
       if (action === "update") {
         if (!fs.existsSync(file)) {
-          return interaction.reply({
-            content: "❌ Waitlist missing.",
-            flags: 64
-          });
+          return interaction.reply({ content: "❌ Waitlist missing.", flags: 64 });
         }
 
         const data = JSON.parse(fs.readFileSync(file));
 
         const embed = new EmbedBuilder()
-          .setTitle(`📋 Waitlist: ${name}`)
+          .setTitle(`📋 Waitlist: ${waitlistName}`)
           .setColor("Blue")
           .setDescription(
             data.users.length
@@ -157,25 +143,19 @@ client.on("interactionCreate", async (interaction) => {
 
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
-            .setCustomId(`update_${name}`)
+            .setCustomId(`update_${waitlistName}`)
             .setLabel("Update")
             .setStyle(ButtonStyle.Primary),
-
           new ButtonBuilder()
-            .setCustomId(`delete_${name}`)
+            .setCustomId(`delete_${waitlistName}`)
             .setLabel("Delete")
             .setStyle(ButtonStyle.Danger)
         );
 
-        return interaction.update({
-          embeds: [embed],
-          components: [row]
-        });
+        return interaction.update({ embeds: [embed], components: [row] });
       }
 
-      // -------------------------
       // DELETE BUTTON
-      -------------------------
       if (action === "delete") {
         const roles = interaction.member.roles.cache.map(r => r.id);
         const isManager = roles.some(r => config.managerRoleIds.includes(r));
@@ -185,39 +165,38 @@ client.on("interactionCreate", async (interaction) => {
 
         if (!isAdmin && !isManager) {
           return interaction.reply({
-            content: "❌ You cannot delete this.",
+            content: "❌ No permission.",
             flags: 64
           });
         }
 
         if (fs.existsSync(file)) fs.unlinkSync(file);
 
-        // Logging
         if (config.logChannelId) {
           const log = interaction.guild.channels.cache.get(config.logChannelId);
-
           if (log) {
             log.send(
-              `🗑️ Deleted **${name}**\n👤 <@${interaction.user.id}>\n🕒 <t:${Math.floor(Date.now() / 1000)}:F>`
+              `🗑️ Waitlist Deleted: **${waitlistName}**
+👤 <@${interaction.user.id}>
+🕒 <t:${Math.floor(Date.now() / 1000)}:F>`
             );
           }
         }
 
         return interaction.update({
-          content: `🗑️ Deleted **${name}**.`,
-          components: [],
-          embeds: []
+          content: `🗑️ Deleted **${waitlistName}**.`,
+          embeds: [],
+          components: []
         });
       }
     }
-
   } catch (err) {
     console.error("Interaction error:", err);
   }
 });
 
 // =========================
-// Bot Ready
+// BOT READY
 // =========================
 
 client.on("clientReady", () => {
@@ -225,15 +204,13 @@ client.on("clientReady", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
-// Login bot
 client.login(process.env.TOKEN);
 
 // =========================
-// START EXPRESS SERVER (Koyeb requires this!)
+// WEB SERVER (REQUIRED)
 // =========================
 
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("🌐 Web server live on port", PORT);
-});
+app.listen(PORT, () =>
+  console.log(`🌐 Web server running on port ${PORT}`)
+);
