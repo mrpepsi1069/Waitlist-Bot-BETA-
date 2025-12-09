@@ -1,70 +1,101 @@
 body {
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: white;
   margin: 0;
   padding: 0;
-}
-
-.container {
-  max-width: 700px;
-  margin: auto;
-  padding: 40px 20px;
+  font-family: "Arial", sans-serif;
+  background: #121212;
+  color: white;
   text-align: center;
 }
 
+.light {
+  background: #f6f6f6;
+  color: #000;
+}
+
+.container {
+  max-width: 800px;
+  margin: auto;
+  padding: 40px 20px;
+}
+
 h1 {
-  font-size: 3rem;
-  margin-bottom: 0;
+  font-size: 42px;
+  margin-bottom: 10px;
 }
 
-.tagline {
+.subtitle {
+  font-size: 18px;
   opacity: 0.8;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
-.logo {
-  width: 150px;
-  margin: 20px auto;
-  display: block;
-}
-
-.status {
-  padding: 10px;
-  font-size: 1.2rem;
-  border-radius: 6px;
-  width: 150px;
-  margin: 10px auto 40px auto;
+#statusBox {
+  font-size: 22px;
+  padding: 12px 25px;
+  border-radius: 12px;
+  display: inline-block;
+  font-weight: bold;
+  margin-bottom: 15px;
 }
 
 .online {
-  background: #16a34a;
+  background: #00e676;
+  color: #000;
 }
 
-.commands {
-  text-align: left;
-  margin: 0 auto 40px auto;
-  max-width: 420px;
-  line-height: 1.8rem;
+.offline {
+  background: #ff1744;
+  color: #fff;
 }
 
-.invite-btn {
-  display: inline-block;
-  background: #3b82f6;
-  padding: 12px 20px;
-  margin-top: 20px;
-  border-radius: 6px;
-  color: white;
+.checking {
+  background: #ffd600;
+  color: #000;
+}
+
+.buttons {
+  margin-top: 15px;
+}
+
+.btn {
+  padding: 14px 24px;
+  margin: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 10px;
   text-decoration: none;
-  font-size: 1.2rem;
+  color: white;
+  display: inline-block;
+  transition: 0.25s;
 }
 
-.invite-btn:hover {
-  background: #2563eb;
+.invite {
+  background: #5865F2;
 }
 
-footer {
+.theme {
+  background: #444;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+.section {
   margin-top: 40px;
-  opacity: 0.6;
-  font-size: 0.9rem;
+  background: rgba(255,255,255,0.06);
+  padding: 20px;
+  border-radius: 12px;
+  text-align: left;
+}
+
+.section h2 {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+
+.cmd {
+  margin: 6px 0;
+  font-size: 18px;
 }
