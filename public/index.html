@@ -18,25 +18,44 @@
         <a href="https://discord.gg/YOURSERVER">Support Server</a>
         <a href="#commands">Commands</a>
     </nav>
-</header>
+<div class="container">
 
-<!-- HERO -->
-<section class="hero">
     <h1>🤖 Waitlist Bot</h1>
-    <p class="subtitle">The smartest automated waitlist manager for Discord communities.</p>
+    <p class="subtitle">The smartest automated waitlist manager for Discord — fast, clean, and powerful.</p>
 
+    <!-- STATUS -->
     <div id="statusBox" class="status checking">Checking bot status...</div>
 
-    <div class="buttons">
-        <a href="https://discord.com/oauth2/authorize?client_id=1446687675330330826&permissions=139586825281&integration_type=0&scope=applications.commands+bot" class="btn invite">
-            ➕ Invite to Discord
-        </a>
-        <a href="https://discord.gg/YOURSERVER" class="btn support">
-            💬 Join Support Server
-        </a>
-    </div>
-</section>
+    <!-- UPTIME -->
+    <div id="uptimeBox" class="statBox">⏱️ Uptime: Loading...</div>
 
+    <!-- STATS -->
+    <div class="stats">
+        <div class="statCard" id="guildCard">🌐 Servers: ...</div>
+        <div class="statCard" id="waitlistCard">📋 Waitlists: ...</div>
+        <div class="statCard" id="pingCard">🏓 Ping: ...</div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="buttons">
+        <a href="https://discord.com/oauth2/authorize?client_id=1446687675330330826&permissions=139586825281&integration_type=0&scope=applications.commands+bot"
+           class="btn invite">➕ Invite Bot</a>
+
+        <a href="https://discord.gg/yourserverhere"
+           class="btn support">💬 Support Server</a>
+    </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2025 Waitlist Bot — All Rights Reserved</p>
+    <a href="#">Terms of Service</a> • <a href="#">Privacy Policy</a>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
 <!-- COMMANDS -->
 <section class="section" id="commands">
     <h2>📜 Commands</h2>
