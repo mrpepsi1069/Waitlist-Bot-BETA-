@@ -2,126 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Waitlist Bot — UPDATED TEST</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: "Arial", sans-serif;
-      background: linear-gradient(135deg, #0e0e0e, #1b1b1b);
-      background-size: 400% 400%;
-      animation: gradient 12s ease infinite;
-      color: white;
-      text-align: center;
-    }
-
-    @keyframes gradient {
-      0% { background-position: 0% 0%; }
-      50% { background-position: 100% 100%; }
-      100% { background-position: 0% 0%; }
-    }
-
-    .container {
-      max-width: 800px;
-      margin: auto;
-      padding: 40px 20px;
-    }
-
-    h1 {
-      font-size: 42px;
-      margin-bottom: 10px;
-      color: #00e6ff;
-    }
-
-    p.subtitle {
-      font-size: 18px;
-      opacity: 0.8;
-      margin-bottom: 20px;
-    }
-
-    #statusBox {
-      display: inline-block;
-      padding: 12px 25px;
-      font-size: 22px;
-      border-radius: 12px;
-      margin: 18px 0;
-      font-weight: bold;
-    }
-
-    .online { background: #00e676; color: black; }
-    .offline { background: #ff1744; color: white; }
-    .checking { background: #ffd600; color: black; }
-
-    .buttons { margin-top: 20px; }
-    .btn {
-      display: inline-block;
-      padding: 14px 24px;
-      margin: 8px;
-      border-radius: 10px;
-      font-size: 18px;
-      font-weight: bold;
-      color: white;
-      text-decoration: none;
-      transition: 0.25s;
-    }
-
-    .btn-invite { background: #5865F2; }
-
-    .btn:hover {
-      transform: scale(1.05);
-      opacity: 0.9;
-    }
-
-    .section {
-      text-align: left;
-      margin-top: 45px;
-      padding: 20px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 14px;
-    }
-
-    .section h2 {
-      margin-bottom: 12px;
-      font-size: 26px;
-    }
-
-    .cmd { margin: 6px 0; font-size: 17px; line-height: 1.6; }
-    .cmd b { color: #00e6ff; }
-
-  </style>
+  <title>Waitlist Bot</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <div class="container">
 
-    <h1>🔥 UPDATED VERSION — If you see this, the site works!</h1>
-    <p class="subtitle">Testing if Koyeb actually redeploys the website…</p>
+<div class="container">
 
-    <div id="statusBox" class="online">🟢 Bot Available</div>
+  <h1>🤖 Waitlist Bot</h1>
+  <p class="subtitle">Fast • Simple • Reliable Waitlists for Discord</p>
 
-    <div class="buttons">
-      <a href="https://discord.com/oauth2/authorize?client_id=1446687675330330826&permissions=139586825281&integration_type=0&scope=applications.commands+bot" class="btn btn-invite">
-        ➕ Invite Bot
-      </a>
-    </div>
+  <!-- STATUS -->
+  <div id="statusBox" class="checking">🟡 Checking Status...</div>
+  <p id="uptime"></p>
+  <p id="servers"></p>
+  <p id="waitlists"></p>
 
-    <div class="section">
-      <h2>📜 Commands</h2>
-      <div class="cmd"><b>/setup</b> — Configure manager roles, channels, and logging.</div>
-      <div class="cmd"><b>/createwaitlist</b> — Create a waitlist.</div>
-      <div class="cmd"><b>/deletewaitlist</b> — Delete a waitlist.</div>
-      <div class="cmd"><b>/renamewaitlist</b> — Rename a waitlist safely.</div>
-      <div class="cmd"><b>/listwaitlists</b> — Show all server waitlists.</div>
-      <div class="cmd"><b>/setwaitlist</b> — Post a waitlist to the configured channel.</div>
-      <div class="cmd"><b>/add</b> — Add a user to a waitlist.</div>
-      <div class="cmd"><b>/remove</b> — Remove a user from a waitlist.</div>
-      <div class="cmd"><b>/purgeallwaitlists</b> — Delete ALL waitlists.</div>
-      <div class="cmd"><b>/cmds</b> — Display all bot commands.</div>
-      <div class="cmd"><b>/ping</b> — Returns bot version + latency.</div>
-    </div>
+  <!-- BUTTONS -->
+  <div class="buttons">
+    <a href="https://discord.com/oauth2/authorize?client_id=1446687675330330826&permissions=139586825281&integration_type=0&scope=applications.commands+bot"
+       class="btn invite">➕ Invite Bot</a>
 
+    <button id="themeBtn" class="btn theme">🌗 Theme</button>
   </div>
+
+  <!-- COMMAND SECTION -->
+  <div class="section">
+    <h2>📜 Commands</h2>
+
+    <div class="cmd"><b>/setup</b> — Configure roles + channels.</div>
+    <div class="cmd"><b>/createwaitlist</b> — Create a new waitlist.</div>
+    <div class="cmd"><b>/deletewaitlist</b> — Delete a waitlist.</div>
+    <div class="cmd"><b>/renamewaitlist</b> — Rename a waitlist.</div>
+    <div class="cmd"><b>/listwaitlists</b> — Show all waitlists.</div>
+    <div class="cmd"><b>/setwaitlist</b> — Post a waitlist in a channel.</div>
+    <div class="cmd"><b>/add</b> — Add a user.</div>
+    <div class="cmd"><b>/remove</b> — Remove a user.</div>
+    <div class="cmd"><b>/purgeallwaitlists</b> — Delete ALL waitlists.</div>
+    <div class="cmd"><b>/cmds</b> — Show all commands.</div>
+    <div class="cmd"><b>/ping</b> — Bot version + latency.</div>
+  </div>
+
+</div>
+
+<script>
+async function getStatus() {
+  try {
+    const res = await fetch("/status");
+    const data = await res.json();
+
+    const box = document.getElementById("statusBox");
+
+    // Status colors
+    if (data.online) {
+      box.className = "online";
+      box.innerText = "🟢 Online";
+    } else {
+      box.className = "offline";
+      box.innerText = "🔴 Offline";
+    }
+
+    // Uptime
+    let sec = Math.floor(data.uptime / 1000);
+    let h = Math.floor(sec / 3600);
+    sec %= 3600;
+    let m = Math.floor(sec / 60);
+    sec %= 60;
+
+    document.getElementById("uptime").innerText =
+      `Uptime: ${h}h ${m}m ${sec}s`;
+
+    // Server count
+    document.getElementById("servers").innerText =
+      `Servers: ${data.guilds}`;
+
+    // Waitlist count
+    document.getElementById("waitlists").innerText =
+      `Total Waitlists: ${data.waitlists}`;
+  } catch (err) {
+    console.log("Status fetch error");
+  }
+}
+
+// Update every 2 sec
+setInterval(getStatus, 2000);
+getStatus();
+
+// Theme switch
+document.getElementById("themeBtn").onclick = () => {
+  document.body.classList.toggle("light");
+};
+</script>
+
 </body>
 </html>
