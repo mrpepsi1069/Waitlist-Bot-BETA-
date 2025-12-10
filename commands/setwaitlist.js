@@ -6,42 +6,37 @@ const path = require("path");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("setwaitlist")
-    .setDescription("Post a waitlist with Update/Delete buttons.")
+    .setDescription("Post a waitlist with an update/delete button.")
     .addStringOption(opt => opt.setName("waitlist").setDescription("Waitlist name").setRequired(true).setAutocomplete(true)),
 
   async execute(interaction) {
-    const guildId = interaction.guild.id;
-    const cfgFile = path.join("configs", `${guildId}.json`);
-    if (!fs.existsSync(cfgFile)) return interaction.reply({ content: "❌ Run /setup first.", flags: 64 });
-    const config = JSON.parse(fs.readFileSync(cfgFile));
+    if (!interaction.guild) return interaction.reply({ content: "Use this in a server.", ephemeral: true });
 
-    const memberRoles = interaction.member.roles.cache.map(r => r.id);
-    const isAdmin = interaction.member.permissions.has("Administrator");
-    const isManager = memberRoles.some(r => (config.managerRoleIds || []).includes(r));
-    if (!isAdmin && !isManager) return interaction.reply({ content: "🔒 You cannot post waitlists.", flags: 64 });
+    const guildId = interaction.guild.id;
+    const configFile = path.join(__dirname, "..", "configs", `${guildId}.json`);
+    if (!fs.existsSync(configFile)) return interaction.reply({ content: "❌ This server has not run /setup yet.", ephemeral: true });
+
+    const config = JSON.parse(fs.readFileSync(configFile));
+    const waitlistChannel = interaction.guild.channels.cache.get(config.waitlistChannelId);
+    if (!waitlistChannel) return interaction.reply({ content: "❌ Configured waitlist channel not found.", ephemeral: true });
 
     const name = interaction.options.getString("waitlist");
-    const file = path.join("waitlists", guildId, `${name}.json`);
-    if (!fs.existsSync(file)) return interaction.reply({ content: "❌ That waitlist does not exist.", flags: 64 });
+    const file = path.join(__dirname, "..", "waitlists", guildId, `${name}.json`);
+    if (!fs.existsSync(file)) return interaction.reply({ content: "❌ That waitlist does not exist.", ephemeral: true });
 
     const data = JSON.parse(fs.readFileSync(file));
+
     const embed = new EmbedBuilder()
       .setTitle(`📋 Waitlist: ${name}`)
       .setColor("Blue")
       .setDescription(data.users.length ? data.users.map((id, i) => `${i + 1}. <@${id}>`).join("\n") : "_No users yet._");
 
-    // send message then update its customIds to include message id
-    const channel = interaction.guild.channels.cache.get(config.waitlistChannelId);
-    if (!channel) return interaction.reply({ content: "❌ Waitlist channel missing.", flags: 64 });
-
-    const sent = await channel.send({ embeds: [embed], components: [] });
-    // build components with message id included
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`update:${guildId}:${name}:${sent.id}`).setLabel("Update").setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId(`delete:${guildId}:${name}:${sent.id}`).setLabel("Delete").setStyle(ButtonStyle.Danger)
+      new ButtonBuilder().setCustomId(`update_${name}`).setLabel("Update").setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(`delete_${name}`).setLabel("Delete").setStyle(ButtonStyle.Danger)
     );
-    await sent.edit({ components: [row] });
 
-    return interaction.reply({ content: `✅ Waitlist **${name}** posted in <#${channel.id}>.`, flags: 64 });
+    await waitlistChannel.send({ embeds: [embed], components: [row] }).catch(() => {});
+    return interaction.reply({ content: `✅ Waitlist **${name}** posted in <#${waitlistChannel.id}>.`, ephemeral: true });
   }
 };
