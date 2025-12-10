@@ -6,40 +6,32 @@ const path = require("path");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("deletewaitlist")
-    .setDescription("Delete a waitlist (manager/admin).")
-    .addStringOption(o => o.setName("waitlist").setDescription("Waitlist name").setRequired(true).setAutocomplete(true)),
+    .setDescription("Delete a waitlist.")
+    .addStringOption(opt => opt.setName("waitlist").setDescription("Waitlist name").setRequired(true).setAutocomplete(true)),
 
   async execute(interaction) {
-    const guildId = interaction.guild.id;
-    const cfgFile = path.join("configs", `${guildId}.json`);
-    if (!fs.existsSync(cfgFile)) return interaction.reply({ content: "❌ Run /setup first.", flags: 64 });
-    const config = JSON.parse(fs.readFileSync(cfgFile));
+    if (!interaction.guild) return interaction.reply({ content: "Use in a server.", ephemeral: true });
+
+    const configFile = path.join(__dirname, "..", "configs", `${interaction.guild.id}.json`);
+    if (!fs.existsSync(configFile)) return interaction.reply({ content: "Server not set up.", ephemeral: true });
+    const config = JSON.parse(fs.readFileSync(configFile));
     const allowedRoles = config.managerRoleIds || [];
+
     const isAdmin = interaction.member.permissions.has("Administrator");
     const isManager = interaction.member.roles.cache.some(r => allowedRoles.includes(r.id));
-    if (!isAdmin && !isManager) return interaction.reply({ content: "🔒 You cannot delete waitlists.", flags: 64 });
+    if (!isAdmin && !isManager) return interaction.reply({ content: "No permission.", ephemeral: true });
 
     const name = interaction.options.getString("waitlist");
-    const file = path.join("waitlists", guildId, `${name}.json`);
-    const nowTs = Math.floor(Date.now() / 1000);
+    const file = path.join(__dirname, "..", "waitlists", interaction.guild.id, `${name}.json`);
+    if (!fs.existsSync(file)) return interaction.reply({ content: "That waitlist does not exist.", ephemeral: true });
 
-    if (!fs.existsSync(file)) return interaction.reply({ content: "❌ Waitlist not found.", flags: 64 });
-
-    const data = JSON.parse(fs.readFileSync(file));
-    const deletedUsers = data.users ?? [];
     fs.unlinkSync(file);
 
-    // log
-    try {
-      const logCh = interaction.guild.channels.cache.get(config.logChannelId);
-      if (logCh) {
-        const lines = [`🗑️ Deleted waitlist **${name}**`, `By: <@${interaction.user.id}>`, `Time: <t:${nowTs}:F>`];
-        if (deletedUsers.length) for (const u of deletedUsers) lines.push(`<@${u}>`);
-        else lines.push("Users removed: _No users_");
-        logCh.send(lines.join("\n"));
-      }
-    } catch (_) {}
+    if (config.logChannelId) {
+      const ch = interaction.guild.channels.cache.get(config.logChannelId);
+      if (ch) ch.send(`🗑 Waitlist **${name}** deleted by <@${interaction.user.id}> — <t:${Math.floor(Date.now()/1000)}:F>`).catch(()=>{});
+    }
 
-    return interaction.reply({ content: `🗑️ Deleted waitlist ${name}.`, flags: 64 });
+    return interaction.reply({ content: `🗑 Deleted **${name}**.`, ephemeral: true });
   }
 };
