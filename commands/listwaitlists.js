@@ -4,26 +4,23 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = {
-  data: new SlashCommandBuilder().setName("listwaitlists").setDescription("Show all waitlists & users."),
+  data: new SlashCommandBuilder().setName("listwaitlists").setDescription("Show all waitlists in this server."),
 
   async execute(interaction) {
+    if (!interaction.guild) return interaction.reply({ content: "Use this in a server.", ephemeral: true });
+
     const guildId = interaction.guild.id;
-    const folder = path.join("waitlists", guildId);
-    if (!fs.existsSync(folder)) return interaction.reply({ content: "📭 No waitlists exist.", flags: 64 });
+    const folder = path.join(__dirname, "..", "waitlists", guildId);
+    if (!fs.existsSync(folder)) return interaction.reply({ embeds: [new EmbedBuilder().setTitle("📄 Waitlists").setDescription("No waitlists yet.").setColor("Blue")] , ephemeral: true });
 
     const files = fs.readdirSync(folder).filter(f => f.endsWith(".json"));
-    if (!files.length) return interaction.reply({ content: "📭 No waitlists exist.", flags: 64 });
+    const names = files.map(f => f.replace(".json", ""));
 
-    const embed = new EmbedBuilder().setTitle("📄 All Waitlists").setColor("Blue");
-    for (const file of files) {
-      const name = file.replace(".json", "");
-      const data = JSON.parse(fs.readFileSync(path.join(folder, file)));
-      const users = (data.users && data.users.length)
-        ? data.users.map((id, i) => (/^\d+$/.test(id) ? `${i + 1}. <@${id}>` : `${i + 1}. ${id}`)).join("\n")
-        : "_No users_";
-      embed.addFields({ name: `📌 ${name}`, value: users });
-    }
+    const desc = names.length
+      ? names.map(n => `• **${n}**`).join("\n")
+      : "No waitlists yet.";
 
-    return interaction.reply({ embeds: [embed], flags: 64 });
+    const embed = new EmbedBuilder().setTitle("📄 Waitlists").setDescription(desc).setColor("Blue");
+    await interaction.reply({ embeds: [embed], ephemeral: true });
   }
 };
